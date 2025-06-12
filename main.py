@@ -1,38 +1,34 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel
-from typing import List, Optional
-import os
-from openai import OpenAI
 import base64
+import json
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# Initialize OpenAI client with your API key
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Load scraped data
+with open("tds_posts.json", "r") as f:
+    discourse_data = json.load(f)
 
 class QuestionRequest(BaseModel):
     question: str
-    image: Optional[str] = None
-
+    image: str = None
+@app.get("/")
+def read_root():
+    return {"message": "Virtual TA is live!"}
 @app.post("/api/")
-async def answer_question(request: QuestionRequest):
-    # Process the question
-    question = request.question
-
-    # Use GPT-3.5-Turbo to answer
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo-0125",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": question}
-        ]
-    )
-
-    answer_text = response.choices[0].message.content
-
-    # Create a standard response
-    result = {
-        "answer": answer_text,
+async def answer_question(data: QuestionRequest):
+    # TODO: Use LLM or keyword match for real answer generation
+    # Dummy response
+    return {
+        "answer": "You must use `gpt-3.5-turbo-0125`...",
         "links": [
             {
                 "url": "https://discourse.onlinedegree.iitm.ac.in/t/ga5-question-8-clarification/155939/4",
@@ -40,9 +36,7 @@ async def answer_question(request: QuestionRequest):
             },
             {
                 "url": "https://discourse.onlinedegree.iitm.ac.in/t/ga5-question-8-clarification/155939/3",
-                "text": "My understanding is that you just have to use a tokenizer, similar to what Prof. Anand used, to get the number of tokens and multiply that by the given rate."
+                "text": "Use tokenizer to count tokens and multiply by rate."
             }
         ]
     }
-
-    return result
